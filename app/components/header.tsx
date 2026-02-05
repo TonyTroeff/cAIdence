@@ -28,22 +28,16 @@ export function Header() {
                     ) : session ? (
                         <>
                             {session.user?.name && (
-                                <span className="hidden text-sm text-zinc-600 dark:text-zinc-400 sm:inline">
+                                <Link href="/profile" className="hidden text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 sm:inline">
                                     {session.user.name}
-                                </span>
+                                </Link>
                             )}
-                            <button
-                                onClick={() => signOut()}
-                                className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                            >
+                            <button onClick={() => signOut()} className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
                                 Logout
                             </button>
                         </>
                     ) : (
-                        <button
-                            onClick={() => signIn("spotify")}
-                            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:bg-purple-500 dark:hover:bg-purple-600"
-                        >
+                        <button onClick={() => signIn("spotify")} className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:bg-purple-500 dark:hover:bg-purple-600">
                             Login
                         </button>
                     )}
@@ -52,4 +46,3 @@ export function Header() {
         </header>
     );
 }
-
