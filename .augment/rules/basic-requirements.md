@@ -6,6 +6,7 @@ type: "always_apply"
 
 - Always use interfaces to describe objects
 - Use types for something simpler (for example `type Option = 'yes' | 'no';` or `type Variant = ITrack | IPlaylist`)
+- Never use "any" or "unknown" or "never"
 
 # Styling
 

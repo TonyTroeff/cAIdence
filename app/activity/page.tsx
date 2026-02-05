@@ -6,6 +6,8 @@ import { signIn, useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { SpotifyRecentlyPlayedItem, SpotifyRecentlyPlayedResponse } from "@/types/spotify";
+import { ArtistChart } from "./components/artist-chart";
+import { DailyChart } from "./components/daily-chart";
 
 interface ApiErrorResponse {
     error: string;
@@ -254,22 +256,29 @@ export default function ActivityPage() {
                             {!error && !isFetching && items.length === 0 && <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-sm text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">No recently played tracks found.</div>}
 
                             {!error && !isFetching && items.length > 0 && (
-                                <div className="space-y-8">
-                                    {groups.map((group) => (
-                                        <div key={group.key} className="space-y-3">
-                                            <div className="flex items-center gap-3 px-1">
-                                                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{group.label}</div>
-                                                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-                                            </div>
+                                <>
+                                    <div className="mb-8 grid gap-6 md:grid-cols-2">
+                                        <DailyChart items={items} />
+                                        <ArtistChart items={items} />
+                                    </div>
 
-                                            <div className="space-y-3">
-                                                {group.items.map((item) => (
-                                                    <TrackRow key={`${item.played_at}-${item.track.id}`} item={item} />
-                                                ))}
+                                    <div className="space-y-8">
+                                        {groups.map((group) => (
+                                            <div key={group.key} className="space-y-3">
+                                                <div className="flex items-center gap-3 px-1">
+                                                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{group.label}</div>
+                                                    <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    {group.items.map((item) => (
+                                                        <TrackRow key={`${item.played_at}-${item.track.id}`} item={item} />
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </>
                     )}
