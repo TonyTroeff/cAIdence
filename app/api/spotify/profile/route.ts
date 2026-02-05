@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getNextAuthJwtFromRequest, getSpotifyTokensFromJwt } from "@/app/lib/auth/spotify-tokens";
-import type { SpotifyRecentlyPlayedResponse } from "@/types/spotify";
+import type { SpotifyMeResponse } from "@/types/spotify";
 
 export const dynamic = "force-dynamic";
 
@@ -24,18 +24,15 @@ class SpotifyApiError extends Error {
     }
 }
 
-async function fetchRecentlyPlayed(accessToken: string): Promise<SpotifyRecentlyPlayedResponse> {
-    const url = new URL("https://api.spotify.com/v1/me/player/recently-played");
-    url.searchParams.set("limit", "50");
-
-    const response = await fetch(url.toString(), {
+async function fetchSpotifyMe(accessToken: string): Promise<SpotifyMeResponse> {
+    const response = await fetch("https://api.spotify.com/v1/me", {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
         cache: "no-store",
     });
 
-    if (response.ok) return response.json() as Promise<SpotifyRecentlyPlayedResponse>;
+    if (response.ok) return response.json() as Promise<SpotifyMeResponse>;
 
     let errorBody: unknown = null;
     try {
@@ -55,7 +52,7 @@ export async function GET(request: NextRequest) {
     if (!jwt)
         return NextResponse.json<ErrorResponse>(
             {
-                error: "You must be authenticated to view recent activity.",
+                error: "You must be authenticated to view your Spotify profile.",
                 code: "not_authenticated",
             },
             { status: 401 },
@@ -82,8 +79,8 @@ export async function GET(request: NextRequest) {
         );
 
     try {
-        const data = await fetchRecentlyPlayed(spotifyTokens.accessToken);
-        return NextResponse.json<SpotifyRecentlyPlayedResponse>(data, {
+        const data = await fetchSpotifyMe(spotifyTokens.accessToken);
+        return NextResponse.json<SpotifyMeResponse>(data, {
             status: 200,
             headers: {
                 "Cache-Control": "no-store",
@@ -91,7 +88,7 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         if (error instanceof SpotifyApiError) {
-            console.error("Spotify recently-played fetch failed", {
+            console.error("Spotify /me fetch failed", {
                 status: error.status,
                 body: error.body,
             });
@@ -114,10 +111,10 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        console.error("Unexpected error fetching recently played", error);
+        console.error("Unexpected error fetching Spotify profile", error);
         return NextResponse.json<ErrorResponse>(
             {
-                error: "Failed to fetch recently played tracks.",
+                error: "Failed to fetch Spotify profile.",
                 code: "spotify_api_error",
             },
             { status: 502 },

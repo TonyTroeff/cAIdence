@@ -4,6 +4,23 @@ export interface SpotifyImage {
     width: number | null;
 }
 
+export interface SpotifyFollowers {
+    href: string | null;
+    total: number;
+}
+
+export interface SpotifyMeResponse {
+    country: string;
+    display_name: string;
+    email: string;
+    followers: SpotifyFollowers;
+    id: string;
+    images: SpotifyImage[];
+    product: string;
+    type: string;
+    uri: string;
+}
+
 export interface SpotifyArtist {
     id: string;
     name: string;

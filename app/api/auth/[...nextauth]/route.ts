@@ -2,12 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import SpotifyProvider from "next-auth/providers/spotify";
 
 // Define the Spotify scopes required for the application
-const SPOTIFY_SCOPES = [
-    "user-read-email",
-    "user-read-private",
-    "user-top-read",
-    "user-read-recently-played",
-].join(" ");
+const SPOTIFY_SCOPES = ["user-read-email", "user-read-private", "user-top-read", "user-read-recently-played"].join(" ");
 
 // NextAuth configuration
 export const authOptions: NextAuthOptions = {
@@ -33,11 +28,17 @@ export const authOptions: NextAuthOptions = {
             }
             return token;
         },
-        // Make access token available in the session for API calls
-        async session({ session, token }) {
-            session.accessToken = token.accessToken as string | undefined;
-            session.refreshToken = token.refreshToken as string | undefined;
-            session.expiresAt = token.expiresAt as number | undefined;
+        // IMPORTANT: Do NOT expose provider tokens to the browser.
+        // The session object returned here is sent to `/api/auth/session` and `useSession()`.
+        async session({ session }) {
+            if (!session.user) return session;
+
+            session.user = {
+                name: session.user.name,
+                email: session.user.email,
+                image: session.user.image,
+            };
+
             return session;
         },
     },
@@ -58,4 +59,3 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
-
