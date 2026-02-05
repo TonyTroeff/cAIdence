@@ -37,6 +37,8 @@ export interface SpotifyTrack {
     name: string;
     artists: SpotifyArtist[];
     album: SpotifyAlbum;
+    duration_ms?: number;
+    popularity?: number;
 }
 
 export interface SpotifyRecentlyPlayedItem {

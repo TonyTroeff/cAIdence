@@ -16,6 +16,12 @@ interface TrackRowProps {
     item: SpotifyRecentlyPlayedItem;
 }
 
+interface IPlayedAtGroup {
+    key: string;
+    label: string;
+    items: SpotifyRecentlyPlayedItem[];
+}
+
 function isSameDay(a: Date, b: Date) {
     if (a.getFullYear() !== b.getFullYear()) return false;
     if (a.getMonth() !== b.getMonth()) return false;
@@ -56,6 +62,44 @@ function formatPlayedAt(playedAtIso: string) {
     });
 
     return `${datePart} at ${timePart}`;
+}
+
+function formatDurationMs(durationMs: number | null | undefined) {
+    if (durationMs == null) return "—";
+    if (!Number.isFinite(durationMs)) return "—";
+    if (durationMs < 0) return "—";
+
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getPopularityEmoji(popularity: number | null | undefined) {
+    if (popularity == null) return "🎵";
+    if (!Number.isFinite(popularity)) return "🎵";
+
+    if (popularity > 80) return "🔥";
+    if (popularity >= 60) return "⭐";
+    if (popularity >= 40) return "💿";
+    return "🎵";
+}
+
+function formatDayHeader(date: Date) {
+    const now = new Date();
+    if (Number.isNaN(date.getTime())) return "Unknown date";
+    if (isSameDay(date, now)) return "Today";
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (isSameDay(date, yesterday)) return "Yesterday";
+
+    return date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
 }
 
 function LoadingList() {
@@ -129,6 +173,38 @@ export default function ActivityPage() {
         return raw.slice().sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
     }, [data]);
 
+    const groups = useMemo(() => {
+        const grouped: IPlayedAtGroup[] = [];
+        let currentKey: string | null = null;
+
+        for (const item of items) {
+            const playedAt = new Date(item.played_at);
+            if (Number.isNaN(playedAt.getTime())) {
+                const fallbackKey = "unknown";
+                const existing = grouped.find((group) => group.key === fallbackKey);
+                if (existing) existing.items.push(item);
+                else grouped.push({ key: fallbackKey, label: "Unknown date", items: [item] });
+                continue;
+            }
+
+            const key = `${playedAt.getFullYear()}-${playedAt.getMonth()}-${playedAt.getDate()}`;
+            if (key !== currentKey) {
+                currentKey = key;
+                grouped.push({
+                    key,
+                    label: formatDayHeader(playedAt),
+                    items: [item],
+                });
+                continue;
+            }
+
+            const last = grouped[grouped.length - 1];
+            if (last) last.items.push(item);
+        }
+
+        return grouped;
+    }, [items]);
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-purple-50/30 to-zinc-50 dark:from-zinc-950 dark:via-purple-950/20 dark:to-zinc-950">
             <main className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
@@ -178,9 +254,20 @@ export default function ActivityPage() {
                             {!error && !isFetching && items.length === 0 && <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-sm text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">No recently played tracks found.</div>}
 
                             {!error && !isFetching && items.length > 0 && (
-                                <div className="space-y-3">
-                                    {items.map((item) => (
-                                        <TrackRow key={`${item.played_at}-${item.track.id}`} item={item} />
+                                <div className="space-y-8">
+                                    {groups.map((group) => (
+                                        <div key={group.key} className="space-y-3">
+                                            <div className="flex items-center gap-3 px-1">
+                                                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{group.label}</div>
+                                                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {group.items.map((item) => (
+                                                    <TrackRow key={`${item.played_at}-${item.track.id}`} item={item} />
+                                                ))}
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             )}
@@ -196,18 +283,34 @@ function TrackRow({ item }: TrackRowProps) {
     const track = item.track;
     const artist = track.artists.map((a) => a.name).join(", ");
     const imageUrl = track.album.images?.[0]?.url ?? null;
+    const duration = formatDurationMs(track.duration_ms);
+    const popularityEmoji = getPopularityEmoji(track.popularity);
+    const popularityLabel = track.popularity == null ? "Popularity unknown" : `Popularity ${track.popularity} out of 100`;
 
     return (
         <div className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/40">
             {imageUrl ? <Image alt={track.album.name || "Album artwork"} src={imageUrl} width={56} height={56} className="h-14 w-14 rounded-xl border border-zinc-200 object-cover dark:border-zinc-800" /> : <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-purple-100 text-xs font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">NA</div>}
 
             <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{track.name}</div>
+                <div className="flex min-w-0 items-center gap-2">
+                    <span aria-hidden="true" title={popularityLabel} className="shrink-0 text-base">
+                        {popularityEmoji}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{track.name}</span>
+                    <span className="sr-only">{popularityLabel}</span>
+                </div>
                 <div className="truncate text-xs text-zinc-600 dark:text-zinc-400">{artist}</div>
-                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 sm:hidden">{formatPlayedAt(item.played_at)}</div>
+                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 sm:hidden">
+                    {formatPlayedAt(item.played_at)}
+                    {" • "}
+                    {duration}
+                </div>
             </div>
 
-            <div className="hidden text-right text-xs text-zinc-500 dark:text-zinc-400 sm:block">{formatPlayedAt(item.played_at)}</div>
+            <div className="hidden text-right text-xs text-zinc-500 dark:text-zinc-400 sm:block">
+                <div>{formatPlayedAt(item.played_at)}</div>
+                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">{duration}</div>
+            </div>
         </div>
     );
 }
