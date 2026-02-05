@@ -286,6 +286,8 @@ function TrackRow({ item }: TrackRowProps) {
     const duration = formatDurationMs(track.duration_ms);
     const popularityEmoji = getPopularityEmoji(track.popularity);
     const popularityLabel = track.popularity == null ? "Popularity unknown" : `Popularity ${track.popularity} out of 100`;
+    const isLiked = item.liked ?? false;
+    const likedLabel = isLiked ? "Saved to your library" : "Not saved to your library";
 
     return (
         <div className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/40">
@@ -296,8 +298,12 @@ function TrackRow({ item }: TrackRowProps) {
                     <span aria-hidden="true" title={popularityLabel} className="shrink-0 text-base">
                         {popularityEmoji}
                     </span>
+                    <span aria-hidden="true" title={likedLabel} className="shrink-0 text-base">
+                        {isLiked ? "❤️" : "🤍"}
+                    </span>
                     <span className="min-w-0 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{track.name}</span>
                     <span className="sr-only">{popularityLabel}</span>
+                    <span className="sr-only">{likedLabel}</span>
                 </div>
                 <div className="truncate text-xs text-zinc-600 dark:text-zinc-400">{artist}</div>
                 <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 sm:hidden">

@@ -2,7 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import SpotifyProvider from "next-auth/providers/spotify";
 
 // Define the Spotify scopes required for the application
-const SPOTIFY_SCOPES = ["user-read-email", "user-read-private", "user-top-read", "user-read-recently-played"].join(" ");
+const SPOTIFY_SCOPES = ["user-read-email", "user-read-private", "user-top-read", "user-read-recently-played", "user-library-read"].join(" ");
 
 // NextAuth configuration
 export const authOptions: NextAuthOptions = {

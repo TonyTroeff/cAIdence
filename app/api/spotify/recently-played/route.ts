@@ -47,6 +47,32 @@ async function fetchRecentlyPlayed(accessToken: string): Promise<SpotifyRecently
     throw new SpotifyApiError(response.status, errorBody);
 }
 
+async function checkTracksLikedStatus(accessToken: string, trackIds: string[]): Promise<boolean[]> {
+    if (trackIds.length === 0) return [];
+
+    // Spotify API allows up to 50 IDs per request
+    const url = new URL("https://api.spotify.com/v1/me/tracks/contains");
+    url.searchParams.set("ids", trackIds.join(","));
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+    });
+
+    if (response.ok) return response.json() as Promise<boolean[]>;
+
+    let errorBody: unknown = null;
+    try {
+        errorBody = await response.json();
+    } catch {
+        // Ignore JSON parsing failures
+    }
+
+    throw new SpotifyApiError(response.status, errorBody);
+}
+
 export async function GET(request: NextRequest) {
     const jwt = await getNextAuthJwtFromRequest(request, {
         cookieName: authOptions.cookies?.sessionToken?.name,
@@ -83,7 +109,33 @@ export async function GET(request: NextRequest) {
 
     try {
         const data = await fetchRecentlyPlayed(spotifyTokens.accessToken);
-        return NextResponse.json<SpotifyRecentlyPlayedResponse>(data, {
+
+        // Extract unique track IDs
+        const trackIds = data.items.map((item) => item.track.id);
+
+        // Fetch liked status for all tracks
+        let likedStatuses: boolean[] = [];
+        try {
+            likedStatuses = await checkTracksLikedStatus(spotifyTokens.accessToken, trackIds);
+        } catch (error) {
+            // If fetching liked status fails, log the error but continue without liked data
+            console.error("Failed to fetch liked status for tracks", error);
+            // Fill with false values as fallback
+            likedStatuses = new Array(trackIds.length).fill(false);
+        }
+
+        // Enrich items with liked status
+        const enrichedItems = data.items.map((item, index) => ({
+            ...item,
+            liked: likedStatuses[index] ?? false,
+        }));
+
+        const enrichedData: SpotifyRecentlyPlayedResponse = {
+            ...data,
+            items: enrichedItems,
+        };
+
+        return NextResponse.json<SpotifyRecentlyPlayedResponse>(enrichedData, {
             status: 200,
             headers: {
                 "Cache-Control": "no-store",

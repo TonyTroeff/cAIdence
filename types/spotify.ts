@@ -44,6 +44,7 @@ export interface SpotifyTrack {
 export interface SpotifyRecentlyPlayedItem {
     played_at: string;
     track: SpotifyTrack;
+    liked?: boolean;
 }
 
 export interface SpotifyRecentlyPlayedCursors {
