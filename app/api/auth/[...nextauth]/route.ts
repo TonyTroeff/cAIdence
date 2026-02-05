@@ -13,6 +13,7 @@ export const authOptions: NextAuthOptions = {
             authorization: {
                 params: {
                     scope: SPOTIFY_SCOPES,
+                    show_dialog: true,
                 },
             },
         }),
